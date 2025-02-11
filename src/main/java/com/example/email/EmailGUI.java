@@ -1,5 +1,6 @@
 package com.example.email;
 
+import com.example.email.provider.*;
 import javax.swing.*;
 import java.awt.*;
 
@@ -7,20 +8,25 @@ public class EmailGUI extends JFrame {
     private JTextField usernameField;
     private JPasswordField passwordField;
     private JTextField toEmailField;
+    private JComboBox<String> providerCombo;
     private JButton testButton;
 
     public EmailGUI() {
         setTitle("Teste de Email");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new GridLayout(4, 2, 10, 10));
-        setSize(400, 200);
+        setLayout(new GridLayout(5, 2, 10, 10));
+        setSize(400, 250);
         
-        // Campos do formulário
-        add(new JLabel("Email (Gmail):"));
+        // Seleção de provedor
+        add(new JLabel("Provedor:"));
+        providerCombo = new JComboBox<>(new String[]{"Gmail", "SendGrid"});
+        add(providerCombo);
+
+        add(new JLabel("Email:"));
         usernameField = new JTextField();
         add(usernameField);
 
-        add(new JLabel("Senha de Aplicativo:"));
+        add(new JLabel("Senha/API Key:"));
         passwordField = new JPasswordField();
         add(passwordField);
 
@@ -28,15 +34,11 @@ public class EmailGUI extends JFrame {
         toEmailField = new JTextField();
         add(toEmailField);
 
-        // Espaço em branco para alinhamento
         add(new JLabel(""));
-        
-        // Botão de teste
         testButton = new JButton("Enviar Email de Teste");
         testButton.addActionListener(e -> enviarEmail());
         add(testButton);
 
-        // Centralizar na tela
         setLocationRelativeTo(null);
     }
 
@@ -44,15 +46,20 @@ public class EmailGUI extends JFrame {
         String username = usernameField.getText();
         String password = new String(passwordField.getPassword());
         String toEmail = toEmailField.getText();
+        String provider = (String) providerCombo.getSelectedItem();
 
         try {
-            EmailSender emailSender = new EmailSender(username, password);
-            emailSender.sendEmail(
+            EmailProvider emailProvider = provider.equals("Gmail") 
+                ? new GmailProvider(username, password)
+                : new SendGridProvider(password);
+
+            emailProvider.sendEmail(
                 username,
                 toEmail,
                 "Teste de E-mail",
-                "Este é um e-mail de teste enviado através do Java!"
+                "Este é um e-mail de teste enviado através do " + provider + "!"
             );
+
             JOptionPane.showMessageDialog(this, 
                 "E-mail enviado com sucesso!", 
                 "Sucesso", 
