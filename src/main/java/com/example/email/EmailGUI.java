@@ -21,6 +21,8 @@ public class EmailGUI extends JFrame {
     private JComboBox<String> providerCombo;
     private JComboBox<AuthType> authTypeCombo;
     private JButton testButton;
+    private JLabel emailLabel;
+    private JLabel passwordLabel;
 
     public EmailGUI() {
         try {
@@ -39,18 +41,21 @@ public class EmailGUI extends JFrame {
         // Componentes existentes com melhor organização
         mainPanel.add(new JLabel("Provedor:"));
         providerCombo = new JComboBox<>(new String[]{"Gmail", "SendGrid"});
-        providerCombo.addActionListener(e -> updateAuthTypeVisibility());
+        providerCombo.addActionListener(e -> updateFieldsVisibility());
         mainPanel.add(providerCombo);
 
         mainPanel.add(new JLabel("Tipo de Autenticação:"));
         authTypeCombo = new JComboBox<>(AuthType.values());
+        authTypeCombo.addActionListener(e -> updateFieldsVisibility());
         mainPanel.add(authTypeCombo);
 
-        mainPanel.add(new JLabel("Email:"));
+        emailLabel = new JLabel("Email:");
+        mainPanel.add(emailLabel);
         usernameField = new JTextField();
         mainPanel.add(usernameField);
 
-        mainPanel.add(new JLabel("Senha/API Key:"));
+        passwordLabel = new JLabel("Senha/API Key:");
+        mainPanel.add(passwordLabel);
         passwordField = new JPasswordField();
         mainPanel.add(passwordField);
 
@@ -68,12 +73,18 @@ public class EmailGUI extends JFrame {
         setSize(450, 300);
         setLocationRelativeTo(null);
 
-        updateAuthTypeVisibility();
+        updateFieldsVisibility();
     }
 
-    private void updateAuthTypeVisibility() {
+    private void updateFieldsVisibility() {
         boolean isGmail = "Gmail".equals(providerCombo.getSelectedItem());
+        boolean isOAuth = isGmail && AuthType.OAUTH2.equals(authTypeCombo.getSelectedItem());
+
         authTypeCombo.setVisible(isGmail);
+        emailLabel.setVisible(!isOAuth);
+        usernameField.setVisible(!isOAuth);
+        passwordLabel.setVisible(!isOAuth);
+        passwordField.setVisible(!isOAuth);
     }
 
     private void enviarEmail() {
@@ -81,12 +92,21 @@ public class EmailGUI extends JFrame {
             testButton.setEnabled(false);
             setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
             
-            validarCampos();
-            
-            String username = usernameField.getText().trim();
-            String password = new String(passwordField.getPassword());
-            String toEmail = toEmailField.getText().trim();
             String provider = (String) providerCombo.getSelectedItem();
+            boolean isOAuth = "Gmail".equals(provider) && 
+                            AuthType.OAUTH2.equals(authTypeCombo.getSelectedItem());
+
+            if (!isOAuth) {
+                validarCampos();
+            }
+            
+            String username = isOAuth ? "" : usernameField.getText().trim();
+            String password = isOAuth ? "" : new String(passwordField.getPassword());
+            String toEmail = toEmailField.getText().trim();
+
+            if (toEmail.isEmpty() || !EMAIL_PATTERN.matcher(toEmail).matches()) {
+                throw new EmailException("Email de destino inválido!");
+            }
 
             EmailProvider emailProvider = provider.equals("Gmail") 
                 ? new GmailProvider(username, password, (AuthType) authTypeCombo.getSelectedItem())
