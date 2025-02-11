@@ -2,6 +2,7 @@ package com.example.email;
 
 import com.example.email.provider.*;
 import com.example.email.exception.EmailException;
+import com.example.email.auth.AuthType;
 import javax.swing.*;
 import java.awt.*;
 import java.util.logging.Logger;
@@ -18,6 +19,7 @@ public class EmailGUI extends JFrame {
     private JPasswordField passwordField;
     private JTextField toEmailField;
     private JComboBox<String> providerCombo;
+    private JComboBox<AuthType> authTypeCombo;
     private JButton testButton;
 
     public EmailGUI() {
@@ -31,13 +33,18 @@ public class EmailGUI extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout(10, 10));
         
-        JPanel mainPanel = new JPanel(new GridLayout(5, 2, 10, 10));
+        JPanel mainPanel = new JPanel(new GridLayout(6, 2, 10, 10));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         // Componentes existentes com melhor organização
         mainPanel.add(new JLabel("Provedor:"));
         providerCombo = new JComboBox<>(new String[]{"Gmail", "SendGrid"});
+        providerCombo.addActionListener(e -> updateAuthTypeVisibility());
         mainPanel.add(providerCombo);
+
+        mainPanel.add(new JLabel("Tipo de Autenticação:"));
+        authTypeCombo = new JComboBox<>(AuthType.values());
+        mainPanel.add(authTypeCombo);
 
         mainPanel.add(new JLabel("Email:"));
         usernameField = new JTextField();
@@ -60,6 +67,13 @@ public class EmailGUI extends JFrame {
         
         setSize(450, 300);
         setLocationRelativeTo(null);
+
+        updateAuthTypeVisibility();
+    }
+
+    private void updateAuthTypeVisibility() {
+        boolean isGmail = "Gmail".equals(providerCombo.getSelectedItem());
+        authTypeCombo.setVisible(isGmail);
     }
 
     private void enviarEmail() {
@@ -75,7 +89,7 @@ public class EmailGUI extends JFrame {
             String provider = (String) providerCombo.getSelectedItem();
 
             EmailProvider emailProvider = provider.equals("Gmail") 
-                ? new GmailProvider(username, password)
+                ? new GmailProvider(username, password, (AuthType) authTypeCombo.getSelectedItem())
                 : new SendGridProvider(password);
 
             emailProvider.sendEmail(
